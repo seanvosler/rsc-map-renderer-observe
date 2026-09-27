@@ -3,6 +3,7 @@ import {createRoot} from "react-dom/client";
 import type {Observer, MapEntity} from "./api";
 import {World3DView} from "./World3DView";
 import {asset} from "./api";
+import {useAdminExtensionBridge} from "./adminBridge";
 
 /**
  * Open-source demo entry. Loads the collision-aware wander tracks baked by
@@ -116,15 +117,7 @@ function Demo({data}: {data: DemoData}) {
 function App() {
     const [data, setData] = useState<DemoData | null>(null);
     const [err, setErr] = useState<string | null>(null);
-    useEffect(() => {
-        if (window.parent !== window) {
-            window.parent.postMessage({
-                source: "openrsc-world-viewer",
-                type: "viewer.ready",
-                version: 1,
-            }, "*");
-        }
-    }, []);
+    useAdminExtensionBridge();
     useEffect(() => {
         fetch(asset("/api/demo/entities.json"))
             .then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))
