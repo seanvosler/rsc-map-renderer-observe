@@ -2,8 +2,8 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import {createRoot} from "react-dom/client";
 import type {Observer, MapEntity} from "./api";
 import {World3DView} from "./World3DView";
-import {asset} from "./api";
-import {useAdminExtensionBridge} from "./adminBridge";
+import {asset, formatAppearance} from "./api";
+import {useAdminExtensionBridge, type AdminWorldSnapshot} from "./adminBridge";
 
 /**
  * Open-source demo entry. Loads the collision-aware wander tracks baked by
@@ -114,16 +114,83 @@ function Demo({data}: {data: DemoData}) {
     );
 }
 
+
+function LiveWorld({snapshot}: {snapshot: AdminWorldSnapshot}) {
+    const observers: Observer[] = useMemo(() => snapshot.players.map(player => ({
+        username: player.username,
+        status: "online",
+        scriptClass: null,
+        description: "Authoritative OpenRSC server state",
+        serverTick: snapshot.serverTick,
+        position: {
+            x: player.x,
+            z: player.y,
+            floor: Math.floor(player.y / 944),
+        },
+        fatiguePercent: null,
+        sleeping: player.sleeping,
+        inCombat: player.inCombat,
+        serverIndex: player.serverIndex,
+        appearance: formatAppearance(player.appearance),
+        hits: player.hits,
+        maxHits: player.maxHits,
+        skulled: player.skulled,
+        combatLvl: player.combatLevel,
+    })), [snapshot]);
+
+    const world = useMemo(() => ({
+        npcs: snapshot.npcs.map(npc => ({
+            serverIndex: npc.serverIndex,
+            id: npc.id,
+            name: npc.name,
+            x: npc.x,
+            z: npc.y,
+            inCombat: npc.inCombat,
+            hp: npc.hits,
+            maxHp: npc.maxHits,
+        })),
+        players: [],
+        objects: [],
+        wallObjects: [],
+        groundItems: snapshot.groundItems.map((item, index) => ({
+            serverIndex: -(index + 1),
+            id: item.id,
+            name: item.amount > 1 ? `${item.name} x${item.amount}` : item.name,
+            x: item.x,
+            z: item.y,
+            inCombat: false,
+        })),
+    }), [snapshot]);
+
+    const focus = observers[0]?.position
+        ? {x: observers[0].position.x, z: observers[0].position.z % 944}
+        : {x: 122, z: 650};
+
+    return (
+        <div style={{width: "100vw", height: "100vh"}}>
+            <World3DView
+                observers={observers}
+                world={world}
+                focus={focus}
+                hideSight
+            />
+        </div>
+    );
+}
+
 function App() {
     const [data, setData] = useState<DemoData | null>(null);
     const [err, setErr] = useState<string | null>(null);
-    useAdminExtensionBridge();
+    const bridge = useAdminExtensionBridge();
     useEffect(() => {
         fetch(asset("/api/demo/entities.json"))
             .then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))
             .then(setData)
             .catch(e => setErr(String(e)));
     }, []);
+    if (bridge.worldSnapshot) {
+        return <LiveWorld snapshot={bridge.worldSnapshot}/>;
+    }
     if (err) {
         return <div style={{width: "100vw", height: "100vh"}}>
             <World3DView observers={[]} focus={{x: 122, z: 650}}/>
