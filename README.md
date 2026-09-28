@@ -373,6 +373,53 @@ wander tracks and, every frame, assembles a one-element `observers` array and
 hands it to `World3DView`. Swap its baked-track expansion for your live stream
 (and add `configureViewerHost` for walk/interact) and you have a live client.
 
+## Admin Extension integration
+
+This fork can run as a hosted **Admin Extension** inside OpenRSC Admin 2026 while remaining independently runnable.
+
+Current bridge status:
+
+```text
+Admin 2026 /world
+      │
+      ▼
+iframe host
+      │
+      ▼
+standalone viewer
+```
+
+The viewer-side bridge lives in `viewer/src/adminBridge.ts`.
+
+Current protocol version: `1`.
+
+Viewer -> Admin:
+
+```text
+viewer.ready
+context.applied
+```
+
+Admin -> Viewer:
+
+```text
+context.changed
+```
+
+The bridge validates the parent/frame origin before accepting messages. The initial context carries the selected Admin server name only; auth credentials, mutation capabilities, and live world state are intentionally not transported through this bridge yet.
+
+The hosted viewer remains fail-soft and independently deployable. A future native React integration may import `World3DView` directly without changing the World Viewer product identity.
+
+### Local Admin integration without rebaking assets
+
+The Admin framework repository contains helper scripts that can reuse the upstream `gh-pages` baked asset tree for local extension development. This avoids requiring the Java/Maven bake toolchain solely to work on the iframe/context integration.
+
+The published baked asset layout is currently one revision ahead of this viewer fork, so the Admin-side setup script creates local compatibility aliases for development. Those aliases are not part of the long-term production asset contract.
+
+The full static WebGL world has been browser-verified through Admin 2026, including completion of all 747 world cells with no viewer asset request failures.
+
+The next integration boundary is a real live `Observer[]` or authoritative world-state source.
+
 ## Dev
 
 ```bash
