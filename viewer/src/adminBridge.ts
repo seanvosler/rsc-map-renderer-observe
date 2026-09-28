@@ -16,6 +16,7 @@ export interface AdminWorldPlayerSnapshot {
     y: number;
     combatLevel: number;
     inCombat: boolean;
+    direction: number | null;
     sleeping: boolean;
     skulled: boolean;
     hits: number;
@@ -36,6 +37,7 @@ export interface AdminWorldNpcSnapshot {
     x: number;
     y: number;
     inCombat: boolean;
+    direction: number | null;
     hits: number;
     maxHits: number;
 }
